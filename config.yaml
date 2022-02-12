@@ -1,0 +1,60 @@
+# This file can update the JupyterHub Helm chart's default configuration values.
+# 
+# For reference see the configuration reference and default values, but make
+# sure to refer to the Helm chart version of interest to you!
+# 
+# Introduction to YAML:     https://www.youtube.com/watch?v=cdLNKUoMc6c
+# Chart config reference:   https://zero-to-jupyterhub.readthedocs.io/en/stable/resources/reference.html
+# Chart default values:     https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/HEAD/jupyterhub/values.yaml
+# Available chart versions: https://jupyterhub.github.io/helm-chart/
+# 
+
+debug:
+  enabled: false
+
+hub:
+  extraConfig:
+    00-first-config: |
+     c.RemoteUserAuthenticator.header_name = "x-auth-request-user"
+
+  config:
+    JupyterHub:
+      authenticator_class: jhub_remote_user_authenticator.remote_user_auth.RemoteUserAuthenticator
+
+  image: 
+    name: of13tch/hub
+    tag: "0.2"
+
+singleuser:
+  image:
+    # You should replace the "latest" tag with a fixed version from:
+    # https://hub.docker.com/r/jupyter/datascience-notebook/tags/
+    # Inspect the Dockerfile at:
+    # https://github.com/jupyter/docker-stacks/tree/HEAD/datascience-notebook/Dockerfile
+    name: jupyter/datascience-notebook
+    tag: latest
+
+  storage:
+    extraVolumes:
+      - name: jupyterhub-shared
+        persistentVolumeClaim:
+          claimName: jupyterhub-shared
+    extraVolumeMounts:
+      - name: jupyterhub-shared
+        mountPath: /home/jovyan/shared
+
+  extraFiles:
+    # The file key is just a reference that doesn't influence the
+    # actual file name.
+    ipython_config.py:
+      # mountPath is required and must be the absolute file path.
+      mountPath: /home/jovyan/.ipython/profile_default/ipython_config.py
+      stringData: |
+        c.InteractiveShellApp.extensions = [
+            'line_profiler'
+        ]
+
+      # mode is by default 0644 and you can optionally override it
+      # either by octal notation (example: 0400) or decimal notation
+      # (example: 256).
+      mode: 400
